@@ -1,148 +1,243 @@
 import React, { useState, useEffect } from "react";
+import axios from "axios";
+import { Sun, Moon, Droplet, Wind, Sunrise, Sunset } from "lucide-react";
 
-const API_KEY = "9bc4f078b42f16d53557501e8a98a31d";
-const API_BASE_URL = "https://api.openweathermap.org/data/2.5";
+// OpenWeather API key
+const WEATHER_API_KEY = "9bc4f078b42f16d53557501e8a98a31d";
+// Unsplash API key
+const UNSPLASH_API_KEY = "14ms9wsQHOx6-86LAis6oNjWFazP34Y4KUbM08sFeTw";
 
-// Custom SearchBar component
-const SearchBar = ({ city, setCity, onSubmit }) => {
-  return (
-    <form onSubmit={onSubmit} className="mb-6">
-      <div className="flex">
-        <input
-          type="text"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          placeholder="Enter city name"
-          className="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500 transition duration-300"
-        >
-          Search
-        </button>
-      </div>
-    </form>
+const App = () => {
+  // State variables
+  const [city, setCity] = useState("Nairobi");
+  const [weatherData, setWeatherData] = useState(null);
+  const [backgroundImage, setBackgroundImage] = useState(
+    "/src/assets/images/Nairobi-Default.jpg"
   );
-};
+  const [darkMode, setDarkMode] = useState(false);
 
-// Custom WeatherDisplay component
-const WeatherDisplay = ({ weatherData }) => {
-  if (!weatherData) return null;
+  // Fetch weather data and background image when the city changes
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // Fetch weather data from OpenWeather API
+        const weatherResponse = await axios.get(
+          `https://api.openweathermap.org/data/2.5/forecast?q=${city}&appid=${WEATHER_API_KEY}&units=metric`
+        );
+        setWeatherData(weatherResponse.data);
 
-  const {
-    name = "Unknown",
-    sys = {},
-    main = {},
-    weather = [{}],
-    wind = {},
-  } = weatherData;
+        // Fetch background image from Unsplash API
+        const unsplashResponse = await axios.get(
+          `https://api.unsplash.com/search/photos?query=${city}&client_id=${UNSPLASH_API_KEY}`
+        );
+        if (unsplashResponse.data.results.length > 0) {
+          setBackgroundImage(unsplashResponse.data.results[0].urls.regular);
+        }
+      } catch (error) {
+        console.error("Error fetching data:", error);
+      }
+    };
 
-  return (
-    <div className="text-center bg-white p-6 rounded-lg shadow-md">
-      <h2 className="text-2xl font-semibold mb-4">
-        {name}
-        {sys.country ? `, ${sys.country}` : ""}
-      </h2>
-      {main.temp !== undefined && (
-        <p className="text-4xl font-bold mb-4">{Math.round(main.temp)}°C</p>
-      )}
-      {weather[0].description && (
-        <p className="text-xl mb-4 capitalize">{weather[0].description}</p>
-      )}
-      <div className="grid grid-cols-2 gap-4 text-sm">
-        <div className="bg-gray-100 p-3 rounded">
-          <p className="font-semibold">Humidity</p>
-          <p>{main.humidity !== undefined ? `${main.humidity}%` : "N/A"}</p>
-        </div>
-        <div className="bg-gray-100 p-3 rounded">
-          <p className="font-semibold">Wind Speed</p>
-          <p>{wind.speed !== undefined ? `${wind.speed} m/s` : "N/A"}</p>
-        </div>
-      </div>
-    </div>
-  );
-};
+    fetchData();
+  }, [city]);
 
-// Custom ErrorAlert component
-const ErrorAlert = ({ message }) => {
+  // Function to determine the gradient color of the precipitation card
+  const getPrecipitationCardGradient = () => {
+    if (!weatherData) return "bg-gradient-to-br from-[#5382ac] to-[#759bbd]";
+
+    const temp = weatherData.list[0].main.temp;
+    const cloudiness = weatherData.list[0].clouds.all;
+
+    if (cloudiness > 50) {
+      return "bg-gradient-to-br from-[#63939c] to-[#82a8b0]";
+    } else if (temp >= 15) {
+      return "bg-gradient-to-br from-[#f5540a] to-[#f7763b]";
+    } else {
+      return "bg-gradient-to-br from-[#5382ac] to-[#759bbd]";
+    }
+  };
+
+  // Function to get icon color based on precipitation card gradient
+  const getIconColor = () => {
+    const gradient = getPrecipitationCardGradient();
+    if (gradient.includes("#f5540a")) return "#f7763b";
+    if (gradient.includes("#5382ac")) return "#759bbd";
+    return "#82a8b0";
+  };
+
   return (
     <div
-      className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded relative mb-4"
-      role="alert"
+      className={`min-h-screen ${
+        darkMode ? "bg-gray-900 text-white" : "bg-gray-100 text-gray-900"
+      }`}
     >
-      <strong className="font-bold">Error: </strong>
-      <span className="block sm:inline">{message}</span>
-    </div>
-  );
-};
+      <div className="container mx-auto p-4">
+        {/* Header with app title and dark mode toggle */}
+        <header className="flex justify-between items-center mb-8">
+          <h1 className="text-3xl font-bold">
+            ALX Capstone Project: Weather App
+          </h1>
+          <button
+            onClick={() => setDarkMode(!darkMode)}
+            className="p-2 rounded-full bg-gray-200 dark:bg-gray-700"
+          >
+            {darkMode ? (
+              <Sun className="w-6 h-6" />
+            ) : (
+              <Moon className="w-6 h-6" />
+            )}
+          </button>
+        </header>
 
-// Main WeatherDashboard component
-const WeatherDashboard = () => {
-  const [city, setCity] = useState("");
-  const [weatherData, setWeatherData] = useState(null);
-  const [error, setError] = useState(null);
-  const [loading, setLoading] = useState(false);
+        {/* Search input for city */}
+        <input
+          type="text"
+          placeholder="Enter city name"
+          value={city}
+          onChange={(e) => setCity(e.target.value)}
+          className="w-full p-2 rounded-lg mb-8 bg-white dark:bg-gray-800"
+        />
 
-  const fetchWeatherData = async () => {
-    setLoading(true);
-    setError(null);
-    try {
-      const response = await fetch(
-        `${API_BASE_URL}/weather?q=${city}&appid=${API_KEY}&units=metric`
-      );
-      if (!response.ok) {
-        throw new Error("City not found");
-      }
-      const data = await response.json();
-      setWeatherData(data);
-    } catch (err) {
-      setError(err.message);
-      setWeatherData(null);
-    } finally {
-      setLoading(false);
-    }
-  };
+        {weatherData && (
+          <>
+            {/* Main weather card with background image */}
+            <div
+              className="rounded-lg overflow-hidden mb-8 text-white p-8"
+              style={{
+                backgroundImage: `url(${backgroundImage})`,
+                backgroundSize: "cover",
+                backgroundPosition: "center",
+              }}
+            >
+              <div className="bg-black bg-opacity-50 p-4 rounded-lg">
+                <h2 className="text-6xl font-bold mb-2">
+                  {Math.round(weatherData.list[0].main.temp)}°C
+                </h2>
+                <p className="text-2xl mb-4">
+                  {weatherData.city.name}, {weatherData.city.country}
+                </p>
+                <p className="text-xl">
+                  {new Date().getHours() >= 18 ? "Sunset" : "Sunrise"} Time:{" "}
+                  {new Date(
+                    new Date().getHours() >= 18
+                      ? weatherData.city.sunset * 1000
+                      : weatherData.city.sunrise * 1000
+                  ).toLocaleTimeString()}
+                </p>
+              </div>
+            </div>
 
-  useEffect(() => {
-    if (weatherData) {
-      const updateInterval = setInterval(fetchWeatherData, 300000); // Update every 5 minutes
-      return () => clearInterval(updateInterval);
-    }
-  }, [weatherData]);
+            {/* Weather details grid */}
+            <div className="grid grid-cols-2 gap-8 mb-8">
+              {/* Humidity card */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center">
+                <Droplet
+                  className="w-8 h-8 mr-4"
+                  style={{ color: getIconColor() }}
+                />
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Humidity
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {weatherData.list[0].main.humidity}%
+                  </p>
+                </div>
+              </div>
 
-  const handleSubmit = (e) => {
-    e.preventDefault();
-    if (city.trim()) {
-      fetchWeatherData();
-    }
-  };
+              {/* Wind speed card */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center">
+                <Wind
+                  className="w-8 h-8 mr-4"
+                  style={{ color: getIconColor() }}
+                />
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    Wind Speed
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {weatherData.list[0].wind.speed} m/s
+                  </p>
+                </div>
+              </div>
 
-  return (
-    <div className="max-w-md mx-auto mt-10 p-6 bg-white rounded-lg shadow-xl">
-      <h1 className="text-3xl font-bold mb-6 text-center text-blue-600">
-        Weather Dashboard
-      </h1>
-      <SearchBar city={city} setCity={setCity} onSubmit={handleSubmit} />
+              {/* UV Index card */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center">
+                <Sun
+                  className="w-8 h-8 mr-4"
+                  style={{ color: getIconColor() }}
+                />
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    UV Index
+                  </p>
+                  <p className="text-2xl font-bold">7 of 10</p>
+                </div>
+              </div>
 
-      {loading && (
-        <div className="text-center py-4">
-          <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-        </div>
-      )}
+              {/* Sunrise/Sunset card */}
+              <div className="bg-white dark:bg-gray-800 rounded-lg p-4 flex items-center">
+                {new Date().getHours() >= 18 ? (
+                  <Sunset
+                    className="w-8 h-8 mr-4"
+                    style={{ color: getIconColor() }}
+                  />
+                ) : (
+                  <Sunrise
+                    className="w-8 h-8 mr-4"
+                    style={{ color: getIconColor() }}
+                  />
+                )}
+                <div>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">
+                    {new Date().getHours() >= 18 ? "Sunset" : "Sunrise"}
+                  </p>
+                  <p className="text-2xl font-bold">
+                    {new Date(
+                      new Date().getHours() >= 18
+                        ? weatherData.city.sunset * 1000
+                        : weatherData.city.sunrise * 1000
+                    ).toLocaleTimeString()}
+                  </p>
+                </div>
+              </div>
+            </div>
 
-      {error && <ErrorAlert message={error} />}
+            {/* Weekly forecast */}
+            <div className="bg-white dark:bg-gray-800 rounded-lg p-4 mb-8">
+              <h3 className="text-xl font-bold mb-4">7-Day Forecast</h3>
+              <div className="grid grid-cols-7 gap-4">
+                {weatherData.list
+                  .filter((item, index) => index % 8 === 0)
+                  .map((day, index) => (
+                    <div key={index} className="text-center">
+                      <p className="text-sm text-gray-500 dark:text-gray-400">
+                        {new Date(day.dt * 1000).toLocaleDateString("en-US", {
+                          weekday: "short",
+                        })}
+                      </p>
+                      <p className="text-lg font-bold">
+                        {Math.round(day.main.temp)}°C
+                      </p>
+                    </div>
+                  ))}
+              </div>
+            </div>
 
-      {weatherData && <WeatherDisplay weatherData={weatherData} />}
-    </div>
-  );
-};
-
-// Root App component
-const App = () => {
-  return (
-    <div className="min-h-screen bg-gray-100 py-6 flex flex-col justify-center sm:py-12">
-      <WeatherDashboard />
+            {/* Precipitation card */}
+            <div className={`rounded-lg p-4 ${getPrecipitationCardGradient()}`}>
+              <h3 className="text-xl font-bold mb-4 text-white">
+                Monthly Rainfall
+              </h3>
+              <div className="flex justify-between items-end">
+                <p className="text-4xl font-bold text-white">45 mm</p>
+                <p className="text-xl text-white">+17%</p>
+              </div>
+              <p className="text-sm text-white mt-2">This Year</p>
+            </div>
+          </>
+        )}
+      </div>
     </div>
   );
 };
