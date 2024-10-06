@@ -1,26 +1,34 @@
-import React from "react";
-import { Search } from "lucide-react";
+import React, { useState } from "react";
+import { ReactComponent as SearchIcon } from "../assets/icons/search.svg";
 
-const SearchBar = ({ city, setCity, onSubmit }) => {
+function SearchBar({ onSearch }) {
+  const [input, setInput] = useState("");
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    if (input.trim()) {
+      onSearch(input.trim());
+      setInput("");
+    }
+  };
+
   return (
-    <form onSubmit={onSubmit} className="mb-6">
-      <div className="flex">
-        <input
-          type="text"
-          value={city}
-          onChange={(e) => setCity(e.target.value)}
-          placeholder="Enter city name"
-          className="flex-grow px-4 py-2 border border-gray-300 rounded-l-lg focus:outline-none focus:ring-2 focus:ring-blue-500"
-        />
-        <button
-          type="submit"
-          className="px-4 py-2 bg-blue-500 text-white rounded-r-lg hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
-        >
-          <Search size={20} />
-        </button>
-      </div>
+    <form onSubmit={handleSubmit} className="flex items-center">
+      <input
+        type="text"
+        value={input}
+        onChange={(e) => setInput(e.target.value)}
+        placeholder="Enter city name"
+        className="px-4 py-2 border border-gray-300 rounded-l-md focus:outline-none focus:ring-2 focus:ring-blue-500"
+      />
+      <button
+        type="submit"
+        className="bg-blue-500 text-white px-4 py-2 rounded-r-md hover:bg-blue-600 focus:outline-none focus:ring-2 focus:ring-blue-500"
+      >
+        <SearchIcon className="w-5 h-5" />
+      </button>
     </form>
   );
-};
+}
 
 export default SearchBar;
