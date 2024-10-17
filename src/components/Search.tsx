@@ -51,7 +51,8 @@ const Search = ({
                  hover:text-white px-2 py1 cursor-pointer"
                   onClick={() => onOptionSelect(option)}
                 >
-                  {option.name}
+                  {option.name}, {option.country}
+                  {/* Option.name enables the search bar to find the city and option.country adds the abbreviation for the city's country after the name of the city in the search bar.  */}
                 </button>
               </li>
             ))}

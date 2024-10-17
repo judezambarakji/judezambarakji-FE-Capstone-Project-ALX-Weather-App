@@ -128,6 +128,22 @@ const Forecast = ({ data }: Props): JSX.Element => {
             info={`${Math.round(today.pop * 1000)}%`}
             description={getPrecipitation(today.main.humidity)}
           />
+
+          <Tile
+            icon="Pressure"
+            title="Pressure"
+            info={`${today.main.pressure}hPa`}
+            description={`${
+              Math.round(today.main.pressure) < 1013 ? "Lower" : "Higher"
+            }`}
+          />
+
+          <Tile
+            icon="Visibility"
+            title="Visibility"
+            info={`${(today.visibility / 1000).toFixed()} km`}
+            description={`${getVisibilityValue(today.visibility)}`}
+          />
         </section>
       </div>
     </div>
