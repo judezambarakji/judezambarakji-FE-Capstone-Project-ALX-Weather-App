@@ -8,7 +8,7 @@ const App = (): JSX.Element => {
 
   return (
     <main className="flex justify-center items-center bg-gradient-to-br from-sky-400 via-rose-400 to-lime-400 min-h-screen w-full p-4">
-      <div className="w-full max-w-[500px]">
+      <div className="w-full max-w-[500px] sm:max-w-[600px] md:max-w-[700px] lg:max-w-[800px] xl:max-w-[900px]">
         {forecast ? (
           <Forecast data={forecast} />
         ) : (
