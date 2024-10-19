@@ -9,6 +9,7 @@ import {
 import Tile from "./Tile";
 import ArrowLeft from "../assets/icon-components/ArrowLeft";
 import ArrowRight from "../assets/icon-components/ArrowRight";
+import XButton from "../assets/Icon-Components/xButton"; // Import the XButton component
 
 type Props = {
   data: forecastType;
@@ -72,18 +73,26 @@ const Forecast = ({
   onNavigate,
   currentDayIndex,
 }: Props): JSX.Element => {
-  const today = data.list[0];
   const currentDate = new Date();
   currentDate.setDate(currentDate.getDate() + currentDayIndex);
+
+  // Get the forecast data for the current day
+  const currentDayForecast = data.list.filter((item) => {
+    const itemDate = new Date(item.dt * 1000);
+    return itemDate.getDate() === currentDate.getDate();
+  });
+
+  const today = currentDayForecast[0] || data.list[0];
 
   return (
     <div className="w-full bg-black bg-opacity-20 backdrop-blur-ls rounded drop-shadow-lg p-4 md:p-6 text-white relative">
       <div className="absolute top-2 right-2 flex items-center">
-        <span className="mr-2">Exit to Search Bar</span>
+        <span className="mr-2">Back to Search</span>
         <button onClick={onExit} className="text-white hover:text-gray-300">
-          X
+          <XButton /> {/* Replace 'X' text with XButton component */}
         </button>
       </div>
+      {/* Rest of the component remains unchanged */}
       <div className="mx-auto">
         <section className="text-center mb-4 flex justify-center items-center">
           <button onClick={() => onNavigate("prev")} className="mr-4">
@@ -112,13 +121,13 @@ const Forecast = ({
         </section>
 
         <section className="flex justify-center overflow-x-scroll mt-4 pb-2 mb-5">
-          {data.list.map((item, i) => (
+          {currentDayForecast.map((item, i) => (
             <div
               className="inline-block text-center w-[50px] flex-shrink-0"
               key={i}
             >
               <p className="text-xs">
-                {i === 0
+                {i === 0 && currentDayIndex === 0
                   ? "Now"
                   : `${formatHour(new Date(item.dt * 1000).getHours())}:00`}
               </p>

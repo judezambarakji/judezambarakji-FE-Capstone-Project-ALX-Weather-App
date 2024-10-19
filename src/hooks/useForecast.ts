@@ -1,21 +1,12 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { optionType, forecastType } from "../types";
 
-type UseForecastReturn = [
-  string,
-  optionType[],
-  forecastType | null,
-  (e: ChangeEvent<HTMLInputElement>) => void,
-  (option: optionType) => void,
-  () => void,
-  (lat: number, lon: number) => void // Add fetchWeatherByCoords to the return type
-];
-
-const useForecast = (): UseForecastReturn => {
+const useForecast = () => {
   const [location, setLocation] = useState<string>("");
   const [city, setCity] = useState<optionType | null>(null);
   const [options, setOptions] = useState<optionType[]>([]);
   const [forecast, setForecast] = useState<forecastType | null>(null);
+  const [error, setError] = useState<string | null>(null);
   //<[]> means Typescript sets the the type to array.
   //([]) means Typescript starts with an empty array.
 
@@ -25,7 +16,12 @@ const useForecast = (): UseForecastReturn => {
         import.meta.env.VITE_REACT_APP_API_KEY
       }`
     )
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         const processedData = data.map((item: any) => ({
           name: item.name,
@@ -43,6 +39,11 @@ const useForecast = (): UseForecastReturn => {
         );
 
         setOptions(sortedData);
+        setError(null);
+      })
+      .catch((err) => {
+        console.log("API Error: Failed to fetch search options", err);
+        setError("Failed to fetch search options. Please try again.");
       });
   };
 
@@ -52,11 +53,16 @@ const useForecast = (): UseForecastReturn => {
    * @param {ChangeEvent<HTMLInputElement>} e - The input change event
    */
   const onInputChange = (e: ChangeEvent<HTMLInputElement>) => {
-    const value = e.target.value.trim();
+    const value = e.target.value;
     setLocation(value);
 
-    if (value === "") return;
+    if (value.trim() === "") {
+      setError("Location needed");
+      setOptions([]);
+      return;
+    }
 
+    setError(null);
     getSearchOptions(value);
   };
 
@@ -66,14 +72,36 @@ const useForecast = (): UseForecastReturn => {
         city.lon
       }&units=metric&appid=${import.meta.env.VITE_REACT_APP_API_KEY}&json`
     )
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         const forecastData = {
           ...data.city,
-          list: data.list.slice(0, 16),
+          list: data.list.slice(0, 7 * 8), // Get 7 days of data (8 data points per day)
         };
         setForecast(forecastData);
+        setError(null);
+      })
+      .catch((err) => {
+        console.log("API Error: Failed to fetch forecast data", err);
+        setError("Failed to fetch forecast data. Please try again.");
       });
+  };
+
+  /**
+   * Validates if a location has been entered.
+   * @returns {boolean} True if location is not empty, false otherwise.
+   */
+  const validateLocation = (): boolean => {
+    if (!location.trim()) {
+      setError("Location needed");
+      return false;
+    }
+    return true;
   };
 
   /**
@@ -81,7 +109,12 @@ const useForecast = (): UseForecastReturn => {
    * Does nothing if no city is selected.
    */
   const onSubmit = () => {
-    if (!city) return;
+    if (!validateLocation()) return;
+
+    if (!city) {
+      setError("Please select a city from the dropdown.");
+      return;
+    }
 
     getForecast(city);
   };
@@ -96,13 +129,26 @@ const useForecast = (): UseForecastReturn => {
         import.meta.env.VITE_REACT_APP_API_KEY
       }&json`
     )
-      .then((response) => response.json())
+      .then((response) => {
+        if (!response.ok) {
+          throw new Error(`HTTP error! status: ${response.status}`);
+        }
+        return response.json();
+      })
       .then((data) => {
         const forecastData = {
           ...data.city,
-          list: data.list.slice(0, 16),
+          list: data.list.slice(0, 7 * 8), // Get 7 days of data (8 data points per day)
         };
         setForecast(forecastData);
+        setError(null);
+      })
+      .catch((err) => {
+        console.log(
+          "API Error: Failed to fetch weather data by coordinates",
+          err
+        );
+        setError("Failed to fetch weather data. Please try again.");
       });
   };
 
@@ -113,7 +159,7 @@ const useForecast = (): UseForecastReturn => {
     }
   }, [city]);
 
-  return [
+  return {
     location,
     options,
     forecast,
@@ -121,7 +167,9 @@ const useForecast = (): UseForecastReturn => {
     onOptionSelect,
     onSubmit,
     fetchWeatherByCoords,
-  ];
+    error,
+    validateLocation,
+  };
 };
 
 export default useForecast;

@@ -4,7 +4,7 @@ import Forecast from "./components/Forecast";
 import useForecast from "./hooks/useForecast";
 
 const App = (): JSX.Element => {
-  const [
+  const {
     location,
     options,
     forecast,
@@ -12,12 +12,15 @@ const App = (): JSX.Element => {
     onOptionSelect,
     onSubmit,
     fetchWeatherByCoords,
-  ] = useForecast();
+    error,
+    validateLocation,
+  } = useForecast();
+
   const [showSearch, setShowSearch] = useState(true);
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
   const handleSubmit = () => {
-    if (location) {
+    if (validateLocation()) {
       onSubmit();
       setShowSearch(false);
     }
@@ -51,7 +54,7 @@ const App = (): JSX.Element => {
         }
       );
     } else {
-      console.log("Geolocation is not available in your browser.");
+      console.log("Error: Geolocation is not available in your browser.");
       setShowSearch(true);
     }
   }, []);
@@ -66,6 +69,7 @@ const App = (): JSX.Element => {
             onInputChange={onInputChange}
             onOptionSelect={onOptionSelect}
             onSubmit={handleSubmit}
+            error={error}
           />
         ) : (
           forecast && (
