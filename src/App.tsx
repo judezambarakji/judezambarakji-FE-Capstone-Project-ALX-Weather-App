@@ -4,8 +4,15 @@ import Forecast from "./components/Forecast";
 import useForecast from "./hooks/useForecast";
 
 const App = (): JSX.Element => {
-  const [location, options, forecast, onInputChange, onOptionSelect, onSubmit] =
-    useForecast();
+  const [
+    location,
+    options,
+    forecast,
+    onInputChange,
+    onOptionSelect,
+    onSubmit,
+    fetchWeatherByCoords,
+  ] = useForecast();
   const [showSearch, setShowSearch] = useState(true);
   const [currentDayIndex, setCurrentDayIndex] = useState(0);
 
@@ -35,28 +42,19 @@ const App = (): JSX.Element => {
       navigator.geolocation.getCurrentPosition(
         (position) => {
           const { latitude, longitude } = position.coords;
-          // You need to implement this function to fetch weather data
           fetchWeatherByCoords(latitude, longitude);
+          setShowSearch(false);
         },
         (error) => {
           console.error("Error getting location:", error);
+          setShowSearch(true);
         }
       );
     } else {
       console.log("Geolocation is not available in your browser.");
+      setShowSearch(true);
     }
   }, []);
-
-  // Placeholder function for fetching weather by coordinates
-  const fetchWeatherByCoords = (lat: number, lon: number) => {
-    // Implement your API call here
-    // Once you get the data, update your state accordingly
-    console.log(`Fetching weather for lat: ${lat}, lon: ${lon}`);
-    // Example: fetchWeatherData(lat, lon).then(data => {
-    //   updateForecast(data);
-    //   setShowSearch(false);
-    // });
-  };
 
   return (
     <main className="flex justify-center items-center min-h-screen w-full p-4 bg-[url('./assets/images/Nairobi-Default.jpg')] bg-cover bg-center bg-no-repeat">

@@ -7,7 +7,8 @@ type UseForecastReturn = [
   forecastType | null,
   (e: ChangeEvent<HTMLInputElement>) => void,
   (option: optionType) => void,
-  () => void
+  () => void,
+  (lat: number, lon: number) => void // Add fetchWeatherByCoords to the return type
 ];
 
 const useForecast = (): UseForecastReturn => {
@@ -84,8 +85,25 @@ const useForecast = (): UseForecastReturn => {
 
     getForecast(city);
   };
+
   const onOptionSelect = (option: optionType) => {
     setCity(option);
+  };
+
+  const fetchWeatherByCoords = (lat: number, lon: number) => {
+    fetch(
+      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${
+        import.meta.env.VITE_REACT_APP_API_KEY
+      }&json`
+    )
+      .then((response) => response.json())
+      .then((data) => {
+        const forecastData = {
+          ...data.city,
+          list: data.list.slice(0, 16),
+        };
+        setForecast(forecastData);
+      });
   };
 
   useEffect(() => {
@@ -95,7 +113,15 @@ const useForecast = (): UseForecastReturn => {
     }
   }, [city]);
 
-  return [location, options, forecast, onInputChange, onOptionSelect, onSubmit];
+  return [
+    location,
+    options,
+    forecast,
+    onInputChange,
+    onOptionSelect,
+    onSubmit,
+    fetchWeatherByCoords,
+  ];
 };
 
 export default useForecast;
