@@ -25,7 +25,24 @@ const useForecast = (): UseForecastReturn => {
       }`
     )
       .then((response) => response.json())
-      .then((data) => setOptions(data));
+      .then((data) => {
+        const processedData = data.map((item: any) => ({
+          name: item.name,
+          country: item.country,
+          lat: item.lat,
+          lon: item.lon,
+          state: item.state || "", // Include state information if available
+        }));
+
+        // Sort the options alphabetically by name, country, and state
+        const sortedData = processedData.sort((a: optionType, b: optionType) =>
+          `${a.name}, ${a.country}, ${a.state}`.localeCompare(
+            `${b.name}, ${b.country}, ${b.state}`
+          )
+        );
+
+        setOptions(sortedData);
+      });
   };
 
   /**
