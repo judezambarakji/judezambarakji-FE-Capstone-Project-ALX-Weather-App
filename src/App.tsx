@@ -1,4 +1,4 @@
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import Search from "./components/Search";
 import Forecast from "./components/Forecast";
 import useForecast from "./hooks/useForecast";
@@ -11,7 +11,6 @@ const App = (): JSX.Element => {
     onInputChange,
     onOptionSelect,
     onSubmit,
-    fetchWeatherByCoords,
     error,
     validateLocation,
     backgroundImage,
@@ -41,32 +40,13 @@ const App = (): JSX.Element => {
     }
   };
 
-  useEffect(() => {
-    // Geolocation code
-    if ("geolocation" in navigator) {
-      navigator.geolocation.getCurrentPosition(
-        (position) => {
-          const { latitude, longitude } = position.coords;
-          fetchWeatherByCoords(latitude, longitude);
-          setShowSearch(false);
-        },
-        (error) => {
-          console.error("Error getting location:", error);
-          setShowSearch(true);
-        }
-      );
-    } else {
-      console.log("Error: Geolocation is not available in your browser.");
-      setShowSearch(true);
-    }
-  }, []);
-
   return (
     <main
       className="flex justify-center items-center min-h-screen w-full p-4 bg-cover bg-center bg-no-repeat"
       style={{
-        backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none",
-        backgroundColor: backgroundImage ? "transparent" : "#1e1e1e", // Fallback background color
+        backgroundImage: `url(${
+          backgroundImage || "/src/assets/Images/Nairobi-Default.jpg"
+        })`,
       }}
     >
       <div className="w-full max-w-[500px] sm:max-w-[600px] md:max-w-[700px] lg:max-w-[800px] xl:max-w-[900px] flex flex-col items-center">

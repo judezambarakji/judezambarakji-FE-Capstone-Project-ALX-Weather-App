@@ -7,7 +7,9 @@ const useForecast = () => {
   const [options, setOptions] = useState<optionType[]>([]);
   const [forecast, setForecast] = useState<forecastType | null>(null);
   const [error, setError] = useState<string | null>(null);
-  const [backgroundImage, setBackgroundImage] = useState<string>("");
+  const [backgroundImage, setBackgroundImage] = useState<string>(
+    "/src/assets/Images/Nairobi-Default.jpg"
+  );
   const [isLoading, setIsLoading] = useState<boolean>(false);
   //<[]> means Typescript sets the the type to array.
   //([]) means Typescript starts with an empty array.
@@ -89,47 +91,13 @@ const useForecast = () => {
         console.log("Setting Pexels image:", data.photos[0].src.original);
         setBackgroundImage(data.photos[0].src.original);
       } else {
-        console.log(
-          "No Pexels image found, fetching generic sunset/sunrise image"
-        );
-        await fetchGenericImage();
+        console.log("No Pexels image found, using default image");
+        setBackgroundImage("/src/assets/Images/Nairobi-Default.jpg");
       }
     } catch (err) {
       console.log("API Error: Failed to fetch Pexels image", err);
-      console.log("Fetching generic sunset/sunrise image");
-      await fetchGenericImage();
-    }
-  };
-
-  const fetchGenericImage = async () => {
-    try {
-      const response = await fetch(
-        `https://api.pexels.com/v1/search?query=sunset+sunrise&per_page=1&orientation=landscape&size=large`,
-        {
-          headers: {
-            Authorization: import.meta.env.VITE_REACT_APP_PEXELS_API_KEY,
-          },
-        }
-      );
-
-      if (!response.ok) {
-        throw new Error(`HTTP error! status: ${response.status}`);
-      }
-
-      const data = await response.json();
-      if (data.photos && data.photos.length > 0) {
-        console.log(
-          "Setting generic Pexels image:",
-          data.photos[0].src.original
-        );
-        setBackgroundImage(data.photos[0].src.original);
-      } else {
-        console.log("No generic image found, setting empty background");
-        setBackgroundImage("");
-      }
-    } catch (err) {
-      console.log("API Error: Failed to fetch generic Pexels image", err);
-      setBackgroundImage("");
+      console.log("Using default image");
+      setBackgroundImage("/src/assets/Images/Nairobi-Default.jpg");
     }
   };
 
@@ -197,40 +165,6 @@ const useForecast = () => {
     setCity(option);
   };
 
-  const fetchWeatherByCoords = (lat: number, lon: number) => {
-    setIsLoading(true);
-    fetch(
-      `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${
-        import.meta.env.VITE_REACT_APP_OPENWEATHER_API_KEY
-      }&json`
-    )
-      .then((response) => {
-        if (!response.ok) {
-          throw new Error(`HTTP error! status: ${response.status}`);
-        }
-        return response.json();
-      })
-      .then((data) => {
-        const forecastData = {
-          ...data.city,
-          list: data.list.slice(0, 7 * 8), // Get 7 days of data (8 data points per day)
-        };
-        setForecast(forecastData);
-        setError(null);
-        fetchPexelsImage(data.city.name); // Fetch image for the city
-      })
-      .catch((err) => {
-        console.log(
-          "API Error: Failed to fetch weather data by coordinates",
-          err
-        );
-        setError("Failed to fetch weather data. Please try again.");
-      })
-      .finally(() => {
-        setIsLoading(false);
-      });
-  };
-
   useEffect(() => {
     if (city) {
       setLocation(city.name);
@@ -245,7 +179,6 @@ const useForecast = () => {
     onInputChange,
     onOptionSelect,
     onSubmit,
-    fetchWeatherByCoords,
     error,
     validateLocation,
     backgroundImage,
