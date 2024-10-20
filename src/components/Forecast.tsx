@@ -5,7 +5,7 @@ import {
   getWindDirection,
   getSunTime,
   getPrecipitation,
-} from "../components/Weather";
+} from "../components/WeatherData";
 import Tile from "./Tile";
 import ArrowLeft from "../assets/Icon-components/ArrowLeft";
 import ArrowRight from "../assets/Icon-components/ArrowRight";
