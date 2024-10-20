@@ -7,9 +7,9 @@ import {
   getPrecipitation,
 } from "../components/Weather";
 import Tile from "./Tile";
-import ArrowLeft from "../assets/icon-components/ArrowLeft";
-import ArrowRight from "../assets/icon-components/ArrowRight";
-import XButton from "../assets/Icon-Components/xButton"; // Import the XButton component
+import ArrowLeft from "../assets/Icon-components/ArrowLeft";
+import ArrowRight from "../assets/Icon-components/ArrowRight";
+import XButton from "../assets/Icon-components/xButton"; // Import the XButton component
 
 type Props = {
   data: forecastType;
@@ -96,7 +96,7 @@ const Forecast = ({
       <div className="mx-auto">
         <section className="text-center mb-4 flex justify-center items-center">
           <button onClick={() => onNavigate("prev")} className="mr-4">
-            <ArrowLeft className="w-6 h-6" />
+            <ArrowLeft />
           </button>
           <div className="flex-1 text-center">
             <h2 className="text-2xl font-black">
@@ -116,7 +116,7 @@ const Forecast = ({
             </p>
           </div>
           <button onClick={() => onNavigate("next")} className="ml-4">
-            <ArrowRight className="w-6 h-6" />
+            <ArrowRight />
           </button>
         </section>
 

@@ -1,5 +1,5 @@
 import { useState, useEffect, ChangeEvent } from "react";
-import { optionType, forecastType } from "../types";
+import { optionType, forecastType } from "../components/types";
 
 const useForecast = () => {
   const [location, setLocation] = useState<string>("");
@@ -7,13 +7,15 @@ const useForecast = () => {
   const [options, setOptions] = useState<optionType[]>([]);
   const [forecast, setForecast] = useState<forecastType | null>(null);
   const [error, setError] = useState<string | null>(null);
+  const [backgroundImage, setBackgroundImage] = useState<string>("");
+  const [isLoading, setIsLoading] = useState<boolean>(false);
   //<[]> means Typescript sets the the type to array.
   //([]) means Typescript starts with an empty array.
 
   const getSearchOptions = (value: string) => {
     fetch(
       `https://api.openweathermap.org/geo/1.0/direct?q=${value.trim()}&limit=5&appid=${
-        import.meta.env.VITE_REACT_APP_API_KEY
+        import.meta.env.VITE_REACT_APP_OPENWEATHER_API_KEY
       }`
     )
       .then((response) => {
@@ -33,8 +35,8 @@ const useForecast = () => {
 
         // Sort the options alphabetically by name, country, and state
         const sortedData = processedData.sort((a: optionType, b: optionType) =>
-          `${a.name}, ${a.country}, ${a.state}`.localeCompare(
-            `${b.name}, ${b.country}, ${b.state}`
+          `${a.name}, ${a.country}, ${a.state || ""}`.localeCompare(
+            `${b.name}, ${b.country}, ${b.state || ""}`
           )
         );
 
@@ -66,11 +68,79 @@ const useForecast = () => {
     getSearchOptions(value);
   };
 
+  const fetchPexelsImage = async (cityName: string) => {
+    console.log("Fetching image for:", cityName);
+    try {
+      const response = await fetch(
+        `https://api.pexels.com/v1/search?query=${cityName}+sunset+sunrise&per_page=1&orientation=landscape&size=large`,
+        {
+          headers: {
+            Authorization: import.meta.env.VITE_REACT_APP_PEXELS_API_KEY,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.photos && data.photos.length > 0) {
+        console.log("Setting Pexels image:", data.photos[0].src.original);
+        setBackgroundImage(data.photos[0].src.original);
+      } else {
+        console.log(
+          "No Pexels image found, fetching generic sunset/sunrise image"
+        );
+        await fetchGenericImage();
+      }
+    } catch (err) {
+      console.log("API Error: Failed to fetch Pexels image", err);
+      console.log("Fetching generic sunset/sunrise image");
+      await fetchGenericImage();
+    }
+  };
+
+  const fetchGenericImage = async () => {
+    try {
+      const response = await fetch(
+        `https://api.pexels.com/v1/search?query=sunset+sunrise&per_page=1&orientation=landscape&size=large`,
+        {
+          headers: {
+            Authorization: import.meta.env.VITE_REACT_APP_PEXELS_API_KEY,
+          },
+        }
+      );
+
+      if (!response.ok) {
+        throw new Error(`HTTP error! status: ${response.status}`);
+      }
+
+      const data = await response.json();
+      if (data.photos && data.photos.length > 0) {
+        console.log(
+          "Setting generic Pexels image:",
+          data.photos[0].src.original
+        );
+        setBackgroundImage(data.photos[0].src.original);
+      } else {
+        console.log("No generic image found, setting empty background");
+        setBackgroundImage("");
+      }
+    } catch (err) {
+      console.log("API Error: Failed to fetch generic Pexels image", err);
+      setBackgroundImage("");
+    }
+  };
+
   const getForecast = (city: optionType) => {
+    setIsLoading(true);
     fetch(
       `https://api.openweathermap.org/data/2.5/forecast?lat=${city.lat}&lon=${
         city.lon
-      }&units=metric&appid=${import.meta.env.VITE_REACT_APP_API_KEY}&json`
+      }&units=metric&appid=${
+        import.meta.env.VITE_REACT_APP_OPENWEATHER_API_KEY
+      }&json`
     )
       .then((response) => {
         if (!response.ok) {
@@ -85,10 +155,14 @@ const useForecast = () => {
         };
         setForecast(forecastData);
         setError(null);
+        fetchPexelsImage(city.name); // Fetch image for the city
       })
       .catch((err) => {
         console.log("API Error: Failed to fetch forecast data", err);
         setError("Failed to fetch forecast data. Please try again.");
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   };
 
@@ -124,9 +198,10 @@ const useForecast = () => {
   };
 
   const fetchWeatherByCoords = (lat: number, lon: number) => {
+    setIsLoading(true);
     fetch(
       `https://api.openweathermap.org/data/2.5/forecast?lat=${lat}&lon=${lon}&units=metric&appid=${
-        import.meta.env.VITE_REACT_APP_API_KEY
+        import.meta.env.VITE_REACT_APP_OPENWEATHER_API_KEY
       }&json`
     )
       .then((response) => {
@@ -142,6 +217,7 @@ const useForecast = () => {
         };
         setForecast(forecastData);
         setError(null);
+        fetchPexelsImage(data.city.name); // Fetch image for the city
       })
       .catch((err) => {
         console.log(
@@ -149,6 +225,9 @@ const useForecast = () => {
           err
         );
         setError("Failed to fetch weather data. Please try again.");
+      })
+      .finally(() => {
+        setIsLoading(false);
       });
   };
 
@@ -169,6 +248,8 @@ const useForecast = () => {
     fetchWeatherByCoords,
     error,
     validateLocation,
+    backgroundImage,
+    isLoading,
   };
 };
 

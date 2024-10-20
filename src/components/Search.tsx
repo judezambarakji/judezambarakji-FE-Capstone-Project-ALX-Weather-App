@@ -1,5 +1,5 @@
 import { ChangeEvent } from "react";
-import { optionType } from "../types";
+import { optionType } from "../components/types";
 
 type Props = {
   location: string;

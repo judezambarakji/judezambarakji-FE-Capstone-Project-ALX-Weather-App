@@ -1,3 +1,4 @@
+import React from "react";
 import Feels from "../assets/Icon-components/Feels";
 import Humidity from "../assets/Icon-components/Humidity";
 import Wind from "../assets/Icon-components/Wind";
@@ -33,22 +34,19 @@ const icons = {
   Sunset,
 };
 
+// Define a type for components that accept className
+type IconComponent = React.ComponentType<{ className?: string }>;
+
 const Tile = ({ icon, title, info, description }: Props): JSX.Element => {
-  const Icon = icons[icon];
+  const Icon = icons[icon] as IconComponent;
 
   return (
     <article className="w-full bg-black bg-opacity-30 backdrop-blur-lg rounded drop-shadow-lg p-3 mb-3 flex flex-col justify-between h-30 text-white">
-      {" "}
-      {/* Slightly reduced height */}
       <div className="flex items-center justify-center mb-2">
-        {" "}
-        {/* Maintained mb-2 */}
-        <Icon className="w-6 h-6 text-white mr-2" />{" "}
-        {/* Maintained icon size and mr-2 */}
+        <Icon className="w-6 h-6 text-white mr-2" />
         <h4 className="font-medium text-sm">{title}</h4>
       </div>
-      <h3 className="font-bold text-lg text-center mb-1">{info}</h3>{" "}
-      {/* Reduced mb-2 to mb-1 */}
+      <h3 className="font-bold text-lg text-center mb-1">{info}</h3>
       <p className="text-xs text-center">{description}</p>
     </article>
   );

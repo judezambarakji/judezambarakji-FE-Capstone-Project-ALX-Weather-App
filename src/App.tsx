@@ -14,6 +14,8 @@ const App = (): JSX.Element => {
     fetchWeatherByCoords,
     error,
     validateLocation,
+    backgroundImage,
+    isLoading,
   } = useForecast();
 
   const [showSearch, setShowSearch] = useState(true);
@@ -60,9 +62,17 @@ const App = (): JSX.Element => {
   }, []);
 
   return (
-    <main className="flex justify-center items-center min-h-screen w-full p-4 bg-[url('./assets/images/Nairobi-Default.jpg')] bg-cover bg-center bg-no-repeat">
+    <main
+      className="flex justify-center items-center min-h-screen w-full p-4 bg-cover bg-center bg-no-repeat"
+      style={{
+        backgroundImage: backgroundImage ? `url(${backgroundImage})` : "none",
+        backgroundColor: backgroundImage ? "transparent" : "#1e1e1e", // Fallback background color
+      }}
+    >
       <div className="w-full max-w-[500px] sm:max-w-[600px] md:max-w-[700px] lg:max-w-[800px] xl:max-w-[900px] flex flex-col items-center">
-        {showSearch ? (
+        {isLoading ? (
+          <div className="text-white text-2xl">Loading...</div>
+        ) : showSearch ? (
           <Search
             location={location}
             options={options}
@@ -82,6 +92,13 @@ const App = (): JSX.Element => {
           )
         )}
       </div>
+      {/* Pexels attribution */}
+      <a
+        href="https://www.pexels.com"
+        className="absolute bottom-2 right-2 text-white text-xs"
+      >
+        Photos provided by Pexels
+      </a>
     </main>
   );
 };

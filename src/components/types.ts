@@ -3,6 +3,7 @@ export type optionType = {
   country: string;
   lat: number;
   lon: number;
+  state?: string; // Added state as an optional property
 };
 
 export type forecastType = {
