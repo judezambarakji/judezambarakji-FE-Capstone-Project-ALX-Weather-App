@@ -1,4 +1,4 @@
-import { forecastType } from "./types"; // Corrected import path
+import { forecastType } from "./types";
 import {
   getHumidityValue,
   getVisibilityValue,
@@ -9,13 +9,15 @@ import {
 import Tile from "./Tile";
 import ArrowLeft from "../assets/Icon-components/ArrowLeft";
 import ArrowRight from "../assets/Icon-components/ArrowRight";
-import XButton from "../assets/Icon-components/xButton"; // Import the XButton component
+import XButton from "../assets/Icon-components/xButton";
 
 type Props = {
   data: forecastType;
   onExit: () => void;
   onNavigate: (direction: "prev" | "next") => void;
   currentDayIndex: number;
+  userLocation?: string;
+  onReturnToSearch: () => void;
 };
 
 const Degree = ({ temp }: { temp: number }): JSX.Element => (
@@ -28,21 +30,6 @@ const Degree = ({ temp }: { temp: number }): JSX.Element => (
  * @param {string} title - The original title string.
  * @param {number} spaceCount - The number of non-breaking spaces to add before the title.
  * @returns {string} The title with added spaces before it.
- *
- * How it works:
- * 1. Create a string of non-breaking spaces with the specified count.
- * 2. Concatenate the spaces with the original title.
- *
- * To increase spacing: Increase the spaceCount parameter.
- * To decrease spacing: Decrease the spaceCount parameter.
- * Example usage: addSpacesToTitle("Wind", 2) will return "\u00A0\u00A0Wind"
- *
- * Explanation of '\u00A0':
- * '\u00A0' is a Unicode escape sequence representing a non-breaking space.
- * - '\u' indicates the start of a Unicode escape sequence.
- * - '00A0' is the hexadecimal code point for the non-breaking space character.
- * - A non-breaking space is similar to a regular space, but it prevents
- *   line breaks from occurring at that position in the text.
  */
 const addSpacesToTitle = (title: string, spaceCount: number = 1): string => {
   const spaces = "\u00A0".repeat(spaceCount);
@@ -72,11 +59,12 @@ const Forecast = ({
   onExit,
   onNavigate,
   currentDayIndex,
+  userLocation,
+  onReturnToSearch,
 }: Props): JSX.Element => {
   const currentDate = new Date();
   currentDate.setDate(currentDate.getDate() + currentDayIndex);
 
-  // Get the forecast data for the current day
   const currentDayForecast = data.list.filter((item) => {
     const itemDate = new Date(item.dt * 1000);
     return itemDate.getDate() === currentDate.getDate();
@@ -84,17 +72,48 @@ const Forecast = ({
 
   const today = currentDayForecast[0] || data.list[0];
 
+  const handleReturn = () => {
+    onReturnToSearch();
+    onExit();
+  };
+
   return (
     <div className="w-full bg-black bg-opacity-20 backdrop-blur-ls rounded drop-shadow-lg p-4 md:p-6 text-white relative">
-      <div className="absolute top-2 right-2 flex items-center">
-        <span className="mr-2">Back to Search</span>
-        <button onClick={onExit} className="text-white hover:text-gray-300">
-          <XButton /> {/* Replace 'X' text with XButton component */}
+      {/* 
+        Return Button Spacing Guide:
+        - top-4: 16px from top (reduced from previous)
+        - right-4: 16px from right
+        To adjust spacing:
+        - Decrease values for less space (top-2, right-2)
+        - Increase values for more space (top-6, right-6)
+      */}
+      <div className="absolute top-4 right-4 md:top-5 md:right-5">
+        <button
+          onClick={handleReturn}
+          className="flex items-center space-x-2 hover:bg-white/10 rounded-lg px-4 py-2 transition-all duration-200"
+          aria-label="Return to search"
+        >
+          <span className="text-sm font-medium">Back to Search</span>
+          <XButton />
         </button>
       </div>
-      {/* Rest of the component remains unchanged */}
-      <div className="mx-auto">
-        <section className="text-center mb-4 flex justify-center items-center">
+
+      {/* 
+        Main Content Spacing Guide:
+        - pt-4: Reduced top padding (16px)
+        - space-y-3: Consistent vertical spacing between sections
+        To adjust main content spacing:
+        - Change pt-[2-8] for different top padding
+        - Modify space-y-[2-6] for section spacing
+      */}
+      <div className="mx-auto pt-4 space-y-3">
+        {userLocation && (
+          <div className="text-center">
+            <p className="text-sm font-medium">Location: {userLocation}</p>
+          </div>
+        )}
+
+        <section className="text-center flex justify-center items-center">
           <button onClick={() => onNavigate("prev")} className="mr-4">
             <ArrowLeft />
           </button>
@@ -120,7 +139,14 @@ const Forecast = ({
           </button>
         </section>
 
-        <section className="flex justify-center overflow-x-scroll mt-4 pb-2 mb-5">
+        {/* 
+          Hourly Forecast Spacing:
+          - mt-3: 12px top margin
+          - mb-3: 12px bottom margin
+          To adjust:
+          - Change mt/mb-[2-6] for different spacing
+        */}
+        <section className="flex justify-center overflow-x-scroll mt-3 mb-3">
           {currentDayForecast.map((item, i) => (
             <div
               className="inline-block text-center w-[50px] flex-shrink-0"
@@ -143,27 +169,13 @@ const Forecast = ({
           ))}
         </section>
 
-        <section className="grid grid-cols-2 gap-4 sm:grid-cols-3 lg:grid-cols-4">
-          <Tile
-            icon="Sunrise"
-            title={addSpacesToTitle("Sunrise", 2)} // Adding 2 spaces before the title
-            info={getSunTime(data.sunrise)}
-            description="Dawn"
-          />
-          <Tile
-            icon="Sunset"
-            title={addSpacesToTitle("Sunset", 2)}
-            info={getSunTime(data.sunset)}
-            description="Dusk"
-          />
-          <Tile
-            icon="Wind"
-            title={addSpacesToTitle("Wind", 2)}
-            info={`${Math.round(today.wind.speed)} km/h`}
-            description={`${getWindDirection(
-              Math.round(today.wind.deg)
-            )}, gusts ${today.wind.gust.toFixed(1)} km/h`}
-          />
+        {/* 
+          Tiles Grid Spacing:
+          - gap-3: Reduced gap between tiles (12px)
+          To adjust:
+          - Change gap-[2-6] for different tile spacing
+        */}
+        <section className="grid grid-cols-2 gap-3 sm:grid-cols-3 lg:grid-cols-4">
           <Tile
             icon="Feels"
             title={addSpacesToTitle("Feels like", 2)}
@@ -181,10 +193,18 @@ const Forecast = ({
             description={getHumidityValue(today.main.humidity)}
           />
           <Tile
-            icon="Precipitation"
-            title={addSpacesToTitle("Precipitation", 2)}
-            info={`${Math.round(today.pop * 100)}%`}
-            description={getPrecipitation(today.main.humidity)}
+            icon="Wind"
+            title={addSpacesToTitle("Wind", 2)}
+            info={`${Math.round(today.wind.speed)} km/h`}
+            description={`${getWindDirection(
+              Math.round(today.wind.deg)
+            )}, gusts ${today.wind.gust.toFixed(1)} km/h`}
+          />
+          <Tile
+            icon="Visibility"
+            title={addSpacesToTitle("Visibility", 2)}
+            info={`${(today.visibility / 1000).toFixed()} km`}
+            description={getVisibilityValue(today.visibility)}
           />
           <Tile
             icon="Pressure"
@@ -195,10 +215,22 @@ const Forecast = ({
             } than standard`}
           />
           <Tile
-            icon="Visibility"
-            title={addSpacesToTitle("Visibility", 2)}
-            info={`${(today.visibility / 1000).toFixed()} km`}
-            description={getVisibilityValue(today.visibility)}
+            icon="Precipitation"
+            title={addSpacesToTitle("Precipitation", 2)}
+            info={`${Math.round(today.pop * 100)}%`}
+            description={getPrecipitation(today.main.humidity)}
+          />
+          <Tile
+            icon="Sunrise"
+            title={addSpacesToTitle("Sunrise", 2)}
+            info={getSunTime(data.sunrise)}
+            description="Dawn"
+          />
+          <Tile
+            icon="Sunset"
+            title={addSpacesToTitle("Sunset", 2)}
+            info={getSunTime(data.sunset)}
+            description="Dusk"
           />
         </section>
       </div>
