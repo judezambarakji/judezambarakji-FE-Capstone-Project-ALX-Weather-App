@@ -12,6 +12,58 @@ const NAIROBI_DEFAULT = {
   lon: 36.8219,
 };
 
+/**
+ * Helper function to format the location string with detailed location information
+ * This function takes raw location data and creates a properly formatted location string
+ * @param locationData - Raw location data from the geocoding API containing address details
+ * @returns A formatted string like "Your Location: Kihara ward, Ruaka, Kiambu County, Kenya"
+ *
+ * The function handles:
+ * 1. Ward names without duplication
+ * 2. City/town names when different from ward
+ * 3. County names with proper suffix
+ * 4. Consistent formatting and punctuation
+ */
+const formatLocationString = (locationData: any): string => {
+  try {
+    // Initialize array to hold each part of the location
+    const locationParts: string[] = [];
+
+    // Extract and clean ward name - remove any "ward" suffix if it exists
+    const rawWardName =
+      locationData.local_names?.en ||
+      locationData.address?.ward ||
+      locationData.name ||
+      "";
+    const wardName = rawWardName.toLowerCase().replace(/ ward$/i, "");
+
+    // Add ward with proper suffix if it exists
+    if (wardName) {
+      locationParts.push(`${wardName} ward`);
+    }
+
+    // Add city/town name if it's different from ward name
+    const cityName = locationData.name;
+    if (cityName && cityName.toLowerCase() !== wardName.toLowerCase()) {
+      locationParts.push(cityName);
+    }
+
+    // Add county name if available
+    if (locationData.state) {
+      locationParts.push(`${locationData.state} County`);
+    }
+
+    // Always add Kenya as the country
+    locationParts.push("Kenya");
+
+    // Return the formatted string
+    return `Your Location: ${locationParts.join(", ")}`;
+  } catch (error) {
+    console.error("Error formatting location string:", error);
+    return "Your Location: Nairobi, Kenya";
+  }
+};
+
 const useForecast = () => {
   const [location, setLocation] = useState<string>("");
   const [city, setCity] = useState<optionType | null>(null);
@@ -28,23 +80,23 @@ const useForecast = () => {
     setBackgroundImage(DEFAULT_BACKGROUND);
   };
 
-  // Load Nairobi weather as fallback
+  // Load Nairobi weather as fallback with properly formatted location string
   const loadNairobiWeather = async () => {
     console.log("Loading Nairobi weather data");
-    setUserLocation("Nairobi, Kenya");
+    setUserLocation("Your Location: Nairobi City, Nairobi County, Kenya");
     setCity(NAIROBI_DEFAULT);
     await getForecast(NAIROBI_DEFAULT);
     resetToDefaultBackground();
   };
 
-  // Initialize with Nairobi weather
   useEffect(() => {
-    loadNairobiWeather();
+    getUserLocation();
   }, []);
 
   const getUserLocation = () => {
     if ("geolocation" in navigator) {
       setIsGettingLocation(true);
+      setError(null);
 
       const options = {
         enableHighAccuracy: true,
@@ -58,7 +110,7 @@ const useForecast = () => {
           const { latitude, longitude } = position.coords;
 
           try {
-            // Reverse geocoding to get city name
+            // First API call to get basic location data
             const response = await fetch(
               `https://api.openweathermap.org/geo/1.0/reverse?lat=${latitude}&lon=${longitude}&limit=1&appid=${
                 import.meta.env.VITE_REACT_APP_OPENWEATHER_API_KEY
@@ -66,6 +118,9 @@ const useForecast = () => {
             );
 
             if (!response.ok) {
+              setError(
+                "Failed to get location details. Using Nairobi as default."
+              );
               console.warn("Reverse geocoding failed, using Nairobi");
               await loadNairobiWeather();
               return;
@@ -74,11 +129,46 @@ const useForecast = () => {
             const data = await response.json();
             if (data && data.length > 0) {
               const locationData = data[0];
-              // If location is not in Kenya, use Nairobi
               if (locationData.country !== "KE") {
+                setError("Location outside Kenya. Using Nairobi as default.");
                 console.log("Location outside Kenya, using Nairobi");
                 await loadNairobiWeather();
                 return;
+              }
+
+              // Enhanced location data processing
+              try {
+                // Additional API call to get ward-level details
+                const detailsResponse = await fetch(
+                  `https://api.openweathermap.org/data/2.5/weather?lat=${latitude}&lon=${longitude}&appid=${
+                    import.meta.env.VITE_REACT_APP_OPENWEATHER_API_KEY
+                  }`
+                );
+
+                if (detailsResponse.ok) {
+                  const detailsData = await detailsResponse.json();
+                  // Combine location data with additional details
+                  const enhancedLocationData = {
+                    ...locationData,
+                    local_names: detailsData.local_names || {},
+                    address: {
+                      ward: detailsData.name,
+                      county: locationData.state,
+                    },
+                  };
+
+                  // Set the formatted location string using the enhanced data
+                  setUserLocation(formatLocationString(enhancedLocationData));
+                } else {
+                  // Fallback to basic formatting if details call fails
+                  setUserLocation(formatLocationString(locationData));
+                }
+              } catch (detailsError) {
+                console.error(
+                  "Error fetching detailed location:",
+                  detailsError
+                );
+                setUserLocation(formatLocationString(locationData));
               }
 
               const cityData = {
@@ -89,21 +179,24 @@ const useForecast = () => {
                 lon: longitude,
               };
 
-              console.log("Location data:", cityData);
               setCity(cityData);
-              setUserLocation(`${cityData.name}, Kenya`);
               await getForecast(cityData);
             } else {
+              setError("No location data found. Using Nairobi as default.");
               console.warn("No location data returned, using Nairobi");
               await loadNairobiWeather();
             }
           } catch (err) {
+            setError("Error getting location. Using Nairobi as default.");
             console.error("Error getting location:", err);
             await loadNairobiWeather();
           }
           setIsGettingLocation(false);
         },
         async (err) => {
+          setError(
+            `Location access denied: ${err.message}. Using Nairobi as default.`
+          );
           console.error("Geolocation error:", err);
           await loadNairobiWeather();
           setIsGettingLocation(false);
@@ -111,13 +204,14 @@ const useForecast = () => {
         options
       );
     } else {
+      setError("Geolocation not supported. Using Nairobi as default.");
       console.warn("Geolocation not supported, using Nairobi");
       loadNairobiWeather();
     }
   };
 
+  // [Rest of the existing code remains exactly the same...]
   const fetchPexelsImage = async (cityName: string) => {
-    // For Nairobi, always use default background
     if (cityName.toLowerCase() === "nairobi") {
       resetToDefaultBackground();
       return;
@@ -164,6 +258,8 @@ const useForecast = () => {
   };
 
   const getSearchOptions = (value: string) => {
+    setError(null);
+
     fetch(
       `https://api.openweathermap.org/geo/1.0/direct?q=${value.trim()}&limit=5&appid=${
         import.meta.env.VITE_REACT_APP_OPENWEATHER_API_KEY
@@ -182,6 +278,7 @@ const useForecast = () => {
         setOptions(processedData);
       })
       .catch((e) => {
+        setError("Failed to fetch location options. Please try again.");
         console.error("Search options error:", e);
       });
   };
@@ -264,6 +361,7 @@ const useForecast = () => {
     userLocation,
     isGettingLocation,
     resetToDefaultBackground,
+    getUserLocation,
   };
 };
 
