@@ -1,7 +1,7 @@
 import { useState, useEffect, ChangeEvent } from "react";
 import { optionType, forecastType } from "../components/types";
 
-const DEFAULT_BACKGROUND = "/src/assets/Images/Nairobi-Default.jpg";
+const DEFAULT_BACKGROUND = "/Nairobi-Default.jpg";
 
 // Nairobi default location configuration
 const NAIROBI_DEFAULT = {
