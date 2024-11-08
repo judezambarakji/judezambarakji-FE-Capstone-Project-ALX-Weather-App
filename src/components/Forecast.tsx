@@ -109,7 +109,7 @@ const Forecast = ({
       <div className="mx-auto pt-4 space-y-3">
         {userLocation && (
           <div className="text-center">
-            <p className="text-sm font-medium">Location: {userLocation}</p>
+            <p className="text-sm font-medium">{userLocation}</p>
           </div>
         )}
 

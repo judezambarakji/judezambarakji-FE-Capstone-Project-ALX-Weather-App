@@ -16,36 +16,42 @@ const NAIROBI_DEFAULT = {
  * Helper function to format the location string with detailed location information
  * This function takes raw location data and creates a properly formatted location string
  * @param locationData - Raw location data from the geocoding API containing address details
- * @returns A formatted string like "Your Location: Kihara ward, Ruaka, Kiambu County, Kenya"
- *
- * The function handles:
- * 1. Ward names without duplication
- * 2. City/town names when different from ward
- * 3. County names with proper suffix
- * 4. Consistent formatting and punctuation
+ * @returns A formatted string like "Your Location: Parklands, Kihara ward, Kiambu County, Kenya"
  */
 const formatLocationString = (locationData: any): string => {
   try {
     // Initialize array to hold each part of the location
     const locationParts: string[] = [];
 
-    // Extract and clean ward name - remove any "ward" suffix if it exists
-    const rawWardName =
-      locationData.local_names?.en ||
-      locationData.address?.ward ||
-      locationData.name ||
-      "";
-    const wardName = rawWardName.toLowerCase().replace(/ ward$/i, "");
+    // Helper function to capitalize first letter of each word
+    const capitalizeWords = (str: string): string => {
+      return str
+        .toLowerCase()
+        .split(" ")
+        .map((word) => word.charAt(0).toUpperCase() + word.slice(1))
+        .join(" ");
+    };
 
-    // Add ward with proper suffix if it exists
-    if (wardName) {
-      locationParts.push(`${wardName} ward`);
+    // Extract and format primary location (e.g., Parklands)
+    const primaryLocation = locationData.local_names?.en || locationData.name;
+    if (primaryLocation) {
+      const formattedPrimary = capitalizeWords(
+        primaryLocation.toLowerCase().replace(/ ward$/i, "")
+      );
+      locationParts.push(formattedPrimary);
     }
 
-    // Add city/town name if it's different from ward name
-    const cityName = locationData.name;
-    if (cityName && cityName.toLowerCase() !== wardName.toLowerCase()) {
-      locationParts.push(cityName);
+    // Extract and format ward name if different from primary location
+    const wardName = locationData.address?.ward;
+    if (
+      wardName &&
+      wardName.toLowerCase().replace(/ ward$/i, "") !==
+        primaryLocation?.toLowerCase().replace(/ ward$/i, "")
+    ) {
+      const formattedWard = capitalizeWords(
+        wardName.toLowerCase().replace(/ ward$/i, "")
+      );
+      locationParts.push(`${formattedWard} Ward`);
     }
 
     // Add county name if available
@@ -157,7 +163,7 @@ const useForecast = () => {
                     },
                   };
 
-                  // Set the formatted location string using the enhanced data
+                  // Set user location using the enhanced data
                   setUserLocation(formatLocationString(enhancedLocationData));
                 } else {
                   // Fallback to basic formatting if details call fails
@@ -210,7 +216,6 @@ const useForecast = () => {
     }
   };
 
-  // [Rest of the existing code remains exactly the same...]
   const fetchPexelsImage = async (cityName: string) => {
     if (cityName.toLowerCase() === "nairobi") {
       resetToDefaultBackground();
